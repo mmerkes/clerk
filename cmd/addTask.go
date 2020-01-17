@@ -23,7 +23,7 @@ import (
 
 // addTaskCmd represents the addTask command
 var addTaskCmd = &cobra.Command{
-	Use:   "addTask",
+	Use:   "add-task",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
