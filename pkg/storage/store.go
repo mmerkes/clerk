@@ -38,7 +38,8 @@ func setDefaultTaskValues(task *Task) {
 	task.CreateTime = time.Now()
 }
 
-func AddTask(task Task) {
+// TODO: Should refactor entire package and separate data layer from modeling layer
+func AddTask(task Task) int {
 	setDefaultTaskValues(&task)
 
 	home, err := homedir.Dir()
@@ -60,6 +61,8 @@ func AddTask(task Task) {
 	tasks.Tasks = append(tasks.Tasks, task)
 
 	saveTasks(db_path, tasks)
+
+	return id
 }
 
 func DeleteTask(id int) {
@@ -73,10 +76,89 @@ func DeleteTask(id int) {
 	for i, t := range tasks.Tasks {
 		if t.Id == id {
 			tasks.Tasks = remove(tasks.Tasks, i)
+			break
 		}
 	}
 
 	saveTasks(db_path, tasks)
+}
+
+func StartTask(id int) {
+	home, err := homedir.Dir()
+	handleError(err)
+
+	db_path := home + "/.clerk-db"
+
+	tasks := loadTasks(db_path)
+
+	var task *Task
+
+	var index int
+	for i, t := range tasks.Tasks {
+		if t.Id == id {
+			index = i
+			task = &t
+			break
+		}
+	}
+
+	if task == nil {
+		panic("Task " + string(id) + " does not exist.")
+	}
+
+	if isTimeUnset(task.StartTime) {
+		task.StartTime = time.Now()
+	}
+
+	// TODO: Skip creating event if already started
+	event := Event{
+		StartTime: time.Now(),
+	}
+	task.Events = append(task.Events, event)
+	tasks.Tasks[index] = *task
+
+	saveTasks(db_path, tasks)
+	// TODO: Keep command process open and set end time when closed
+}
+
+func StopTask(id int) {
+	// TODO: Refactor shared code into function, i.e. getting the DB path, finding a task, etc.
+	home, err := homedir.Dir()
+	handleError(err)
+
+	db_path := home + "/.clerk-db"
+
+	tasks := loadTasks(db_path)
+
+	var task *Task
+
+	var index int
+	for i, t := range tasks.Tasks {
+		if t.Id == id {
+			index = i
+			task = &t
+			break
+		}
+	}
+
+	if task == nil {
+		panic("Task " + string(id) + " does not exist.")
+	}
+
+	for i, e := range task.Events {
+		if isTimeUnset(e.EndTime) {
+			e.EndTime = time.Now()
+			task.Events[i] = e
+		}
+	}
+	tasks.Tasks[index] = *task
+
+	saveTasks(db_path, tasks)
+}
+
+func isTimeUnset(t time.Time) bool {
+	emptyTime := time.Time{}
+	return emptyTime == t
 }
 
 func remove(slice []Task, i int) []Task {

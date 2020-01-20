@@ -7,6 +7,10 @@ General workflow:
 ```
 # Add a new task to your task list
 $ go run main.go add-task
+# Start a task of ID 1
+$ go run main.go start -i 1
+# Stop a task of ID 1
+$ go run main.go stop -i 1
 ```
 
 Run `go run main.go --help` for full usage.
@@ -18,4 +22,10 @@ This CLI uses [cobra](https://github.com/spf13/cobra). See documentation for mor
 ```
 # Add a new command
 $ cobra add commandName
+```
+
+Format code:
+
+```
+$ ./gofmt
 ```
