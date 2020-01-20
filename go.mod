@@ -1,4 +1,4 @@
-module clerk
+module github.com/mmerkes/clerk
 
 go 1.13
 

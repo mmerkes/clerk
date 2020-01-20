@@ -15,8 +15,8 @@ limitations under the License.
 */
 package main
 
-import "clerk/cmd"
+import "github.com/mmerkes/clerk/cmd"
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }
