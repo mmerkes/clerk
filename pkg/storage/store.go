@@ -2,9 +2,13 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	homedir "github.com/mitchellh/go-homedir"
 	"io/ioutil"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -106,19 +110,40 @@ func StartTask(id int) {
 		panic("Task " + string(id) + " does not exist.")
 	}
 
+	startTime := time.Now()
+
 	if isTimeUnset(task.StartTime) {
-		task.StartTime = time.Now()
+		task.StartTime = startTime
 	}
 
 	// TODO: Skip creating event if already started
 	event := Event{
-		StartTime: time.Now(),
+		StartTime: startTime,
 	}
 	task.Events = append(task.Events, event)
 	tasks.Tasks[index] = *task
 
 	saveTasks(db_path, tasks)
-	// TODO: Keep command process open and set end time when closed
+
+	isRunning := true
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		isRunning = false
+		StopTask(id)
+		fmt.Println("")
+	}()
+
+	for isRunning {
+		printTimeElasped(startTime)
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func printTimeElasped(startTime time.Time) {
+	duration := time.Now().Sub(startTime)
+	fmt.Printf("\rTime Elapsed: %02.0f:%02.0f:%02.0f", duration.Hours(), duration.Minutes(), duration.Seconds())
 }
 
 func StopTask(id int) {
