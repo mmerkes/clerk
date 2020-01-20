@@ -62,6 +62,27 @@ func AddTask(task Task) {
 	saveTasks(db_path, tasks)
 }
 
+func DeleteTask(id int) {
+	home, err := homedir.Dir()
+	handleError(err)
+
+	db_path := home + "/.clerk-db"
+
+	tasks := loadTasks(db_path)
+
+	for i, t := range tasks.Tasks {
+		if t.Id == id {
+			tasks.Tasks = remove(tasks.Tasks, i)
+		}
+	}
+
+	saveTasks(db_path, tasks)
+}
+
+func remove(slice []Task, i int) []Task {
+	return append(slice[:i], slice[i+1:]...)
+}
+
 func loadTasks(db_path string) Tasks {
 	tasks := Tasks{}
 	raw_tasks, err := ioutil.ReadFile(db_path)
