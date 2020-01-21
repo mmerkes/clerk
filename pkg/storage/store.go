@@ -5,12 +5,35 @@ import (
 	"fmt"
 	homedir "github.com/mitchellh/go-homedir"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"text/template"
 	"time"
 )
+
+var shortTasksTemplate string = `
+Id  TimeSpent Title
+{{range .Tasks}}{{.Id | printf "%-3d"}} {{.Events | timeSpent}}  {{.Title}}
+{{end}}
+`
+
+var verboseTasksTemplate string = `{{range .Tasks}}------------------------------------------------
+[{{.Id}}] {{.Title}}
+
+{{.Description}}
+
+Time Created: {{.CreateTime | fmtTime}}
+Time Started: {{.StartTime | fmtTime}}
+Time Ended: {{.EndTime | fmtTime}}
+Time Spent: {{.Events | timeSpent}}
+
+Elapsed  Start                End
+{{range .Events}}{{. | timeElapsed}} {{.StartTime | fmtTime}} {{.EndTime | fmtTime}}
+{{end}}
+{{end}}`
 
 type Event struct {
 	StartTime time.Time
@@ -46,12 +69,7 @@ func setDefaultTaskValues(task *Task) {
 func AddTask(task Task) int {
 	setDefaultTaskValues(&task)
 
-	home, err := homedir.Dir()
-	handleError(err)
-
-	db_path := home + "/.clerk-db"
-
-	tasks := loadTasks(db_path)
+	tasks := loadTasks()
 
 	id := 1
 
@@ -64,18 +82,13 @@ func AddTask(task Task) int {
 
 	tasks.Tasks = append(tasks.Tasks, task)
 
-	saveTasks(db_path, tasks)
+	saveTasks(tasks)
 
 	return id
 }
 
 func DeleteTask(id int) {
-	home, err := homedir.Dir()
-	handleError(err)
-
-	db_path := home + "/.clerk-db"
-
-	tasks := loadTasks(db_path)
+	tasks := loadTasks()
 
 	for i, t := range tasks.Tasks {
 		if t.Id == id {
@@ -84,16 +97,11 @@ func DeleteTask(id int) {
 		}
 	}
 
-	saveTasks(db_path, tasks)
+	saveTasks(tasks)
 }
 
 func StartTask(id int) {
-	home, err := homedir.Dir()
-	handleError(err)
-
-	db_path := home + "/.clerk-db"
-
-	tasks := loadTasks(db_path)
+	tasks := loadTasks()
 
 	var task *Task
 
@@ -123,7 +131,7 @@ func StartTask(id int) {
 	task.Events = append(task.Events, event)
 	tasks.Tasks[index] = *task
 
-	saveTasks(db_path, tasks)
+	saveTasks(tasks)
 
 	isRunning := true
 	c := make(chan os.Signal, 1)
@@ -141,19 +149,9 @@ func StartTask(id int) {
 	}
 }
 
-func printTimeElasped(startTime time.Time) {
-	duration := time.Now().Sub(startTime)
-	fmt.Printf("\rTime Elapsed: %02.0f:%02.0f:%02.0f", duration.Hours(), duration.Minutes(), duration.Seconds())
-}
-
 func StopTask(id int) {
-	// TODO: Refactor shared code into function, i.e. getting the DB path, finding a task, etc.
-	home, err := homedir.Dir()
-	handleError(err)
-
-	db_path := home + "/.clerk-db"
-
-	tasks := loadTasks(db_path)
+	// TODO: Refactor shared code into function, i.e. finding a task, etc.
+	tasks := loadTasks()
 
 	var task *Task
 
@@ -178,21 +176,33 @@ func StopTask(id int) {
 	}
 	tasks.Tasks[index] = *task
 
-	saveTasks(db_path, tasks)
+	saveTasks(tasks)
 }
 
-func isTimeUnset(t time.Time) bool {
-	emptyTime := time.Time{}
-	return emptyTime == t
+func ListTasks(verbose bool) {
+	tasks := loadTasks()
+
+	tmpl := shortTasksTemplate
+	if verbose {
+		tmpl = verboseTasksTemplate
+	}
+	s, err := template.New("tasks").
+		Funcs(template.FuncMap{
+			"fmtTime":     fmtTime,
+			"timeElapsed": timeElapsed,
+			"timeSpent":   timeSpent,
+		}).
+		Parse(tmpl)
+	handleError(err)
+
+	if err := s.Execute(os.Stdout, tasks); err != nil {
+		handleError(err)
+	}
 }
 
-func remove(slice []Task, i int) []Task {
-	return append(slice[:i], slice[i+1:]...)
-}
-
-func loadTasks(db_path string) Tasks {
+func loadTasks() Tasks {
 	tasks := Tasks{}
-	raw_tasks, err := ioutil.ReadFile(db_path)
+	raw_tasks, err := ioutil.ReadFile(getDBPath())
 	if err != nil {
 		if strings.HasSuffix(err.Error(), "no such file or directory") {
 			tasks.Tasks = []Task{}
@@ -207,10 +217,73 @@ func loadTasks(db_path string) Tasks {
 	return tasks
 }
 
-func saveTasks(db_path string, tasks Tasks) {
+func saveTasks(tasks Tasks) {
 	s, err := json.MarshalIndent(tasks, "", "  ")
 	handleError(err)
 
-	err = ioutil.WriteFile(db_path, s, 0644)
+	err = ioutil.WriteFile(getDBPath(), s, 0644)
 	handleError(err)
+}
+
+func isTimeUnset(t time.Time) bool {
+	emptyTime := time.Time{}
+	return emptyTime == t
+}
+
+func remove(slice []Task, i int) []Task {
+	return append(slice[:i], slice[i+1:]...)
+}
+
+func getDBPath() string {
+	home, err := homedir.Dir()
+	handleError(err)
+
+	return home + "/.clerk-db"
+}
+
+func printTimeElasped(startTime time.Time) {
+	duration := time.Now().Sub(startTime)
+	fmt.Printf("\rTime Elapsed: %s", toString(duration))
+}
+
+func fmtTime(t time.Time) string {
+	if t == (time.Time{}) {
+		return ""
+	}
+
+	return t.Format("Jan _2 15:04:05 2006")
+}
+
+func timeSpent(events []Event) string {
+	var duration time.Duration = 0
+
+	for _, e := range events {
+		duration += getDuration(e)
+	}
+
+	return toString(duration)
+}
+
+func timeElapsed(e Event) string {
+	return toString(getDuration(e))
+}
+
+func getDuration(e Event) time.Duration {
+	if isTimeUnset(e.EndTime) {
+		return time.Now().Sub(e.StartTime)
+	}
+
+	return e.EndTime.Sub(e.StartTime)
+}
+
+func toString(duration time.Duration) string {
+	return fmt.Sprintf("%02.0f:%02.0f:%02.0f", duration.Hours(), getMinutes(duration), getSeconds(duration))
+}
+
+func getMinutes(duration time.Duration) float64 {
+	return math.Mod(duration.Minutes(), 60)
+}
+
+func getSeconds(duration time.Duration) float64 {
+	return math.Mod(duration.Seconds(), 60)
 }
