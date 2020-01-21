@@ -277,7 +277,11 @@ func getDuration(e Event) time.Duration {
 }
 
 func toString(duration time.Duration) string {
-	return fmt.Sprintf("%02.0f:%02.0f:%02.0f", duration.Hours(), getMinutes(duration), getSeconds(duration))
+	return fmt.Sprintf("%02.0f:%02.0f:%02.0f", getHours(duration), getMinutes(duration), getSeconds(duration))
+}
+
+func getHours(duration time.Duration) float64 {
+	return math.Floor(duration.Hours())
 }
 
 func getMinutes(duration time.Duration) float64 {
