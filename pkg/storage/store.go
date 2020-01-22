@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -147,6 +148,65 @@ func StartTask(id int) {
 		printTimeElasped(startTime)
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func EditTask(id int) {
+	tasks := loadTasks()
+
+	var task *Task
+
+	var index int
+	for i, t := range tasks.Tasks {
+		if t.Id == id {
+			index = i
+			task = &t
+			break
+		}
+	}
+
+	if task == nil {
+		panic("Task " + string(id) + " does not exist.")
+	}
+
+	f, err := ioutil.TempFile(os.TempDir(), "clerk")
+	handleError(err)
+
+	// Create a temporary file to allow the user to edit the task
+	_, err = f.Write([]byte(fmt.Sprintf("%s\n%s", task.Title, task.Description)))
+	handleError(err)
+
+	fpath := f.Name()
+
+	f.Close()
+
+	// Option the default editor on the OS
+	cmd := exec.Command(os.Getenv("EDITOR"), fpath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
+	handleError(err)
+
+	// Wait for editor to be closed
+	err = cmd.Wait()
+	handleError(err)
+
+	context, err := ioutil.ReadFile(fpath)
+	var newline int
+	for i, c := range context {
+		// Find the first newline to separate title and description
+		if c == '\n' {
+			newline = i
+			break
+		}
+	}
+
+	task.Title = string(context[:newline])
+	task.Description = string(context[newline+1:])
+
+	tasks.Tasks[index] = *task
+
+	saveTasks(tasks)
 }
 
 func StopTask(id int) {
