@@ -119,9 +119,15 @@ func StartTask(id int) {
 		panic("Task " + string(id) + " does not exist.")
 	}
 
+	// Refactor: add flag so these if's can be cleaner
+	if isTimeSet(task.EndTime) {
+		fmt.Println("Task is already Completed")
+		return
+	}
+
 	startTime := time.Now()
 
-	if isTimeUnset(task.StartTime) {
+	if !isTimeSet(task.StartTime) {
 		task.StartTime = startTime
 	}
 
@@ -168,6 +174,11 @@ func EditTask(id int) {
 		panic("Task " + string(id) + " does not exist.")
 	}
 
+	if isTimeSet(task.EndTime) {
+		fmt.Println("Task is already Completed")
+		return
+	}
+
 	f, err := ioutil.TempFile(os.TempDir(), "clerk")
 	handleError(err)
 
@@ -180,7 +191,11 @@ func EditTask(id int) {
 	f.Close()
 
 	// Option the default editor on the OS
-	cmd := exec.Command(os.Getenv("EDITOR"), fpath)
+	editor := os.Getenv("EDITOR")
+	if len(editor) == 0 {
+		editor = "vim"
+	}
+	cmd := exec.Command(editor, fpath)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -228,13 +243,34 @@ func StopTask(id int) {
 		panic("Task " + string(id) + " does not exist.")
 	}
 
+	if isTimeSet(task.EndTime) {
+		fmt.Println("Task is already Completed")
+		return
+	}
+
 	for i, e := range task.Events {
-		if isTimeUnset(e.EndTime) {
+		if !isTimeSet(e.EndTime) {
 			e.EndTime = time.Now()
 			task.Events[i] = e
 		}
 	}
 	tasks.Tasks[index] = *task
+
+	saveTasks(tasks)
+}
+
+func CompleteTask(id int) {
+	tasks := loadTasks()
+	task, index := getTask(id, &tasks)
+
+	if isTimeSet(task.EndTime) {
+		fmt.Println("Task is already Completed")
+		return
+	}
+
+	task.EndTime = time.Now()
+
+	tasks.Tasks[index] = task
 
 	saveTasks(tasks)
 }
@@ -258,6 +294,18 @@ func ListTasks(verbose bool) {
 	if err := s.Execute(os.Stdout, tasks); err != nil {
 		handleError(err)
 	}
+}
+
+func getTask(id int, tasks *Tasks) (task Task, index int) {
+	for index, task = range tasks.Tasks {
+		if task.Id == id {
+			return task, index
+		}
+	}
+
+	handleError(fmt.Errorf("Task %d does not exist.", id))
+
+	return
 }
 
 func loadTasks() Tasks {
@@ -285,9 +333,9 @@ func saveTasks(tasks Tasks) {
 	handleError(err)
 }
 
-func isTimeUnset(t time.Time) bool {
+func isTimeSet(t time.Time) bool {
 	emptyTime := time.Time{}
-	return emptyTime == t
+	return emptyTime != t
 }
 
 func remove(slice []Task, i int) []Task {
@@ -329,7 +377,7 @@ func timeElapsed(e Event) string {
 }
 
 func getDuration(e Event) time.Duration {
-	if isTimeUnset(e.EndTime) {
+	if !isTimeSet(e.EndTime) {
 		return time.Now().Sub(e.StartTime)
 	}
 
