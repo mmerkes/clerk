@@ -18,23 +18,36 @@ package cmd
 import (
 	"github.com/mmerkes/clerk/pkg/storage"
 	"github.com/spf13/cobra"
+
+	"bufio"
+	"fmt"
+	"os"
 )
 
-var id int
-
-// deleteTaskCmd represents the deleteTask command
-var deleteTaskCmd = &cobra.Command{
-	Use:   "delete-task",
-	Short: "Delete a task",
-	Long:  `Delete a task from your set of tasks.`,
+// TODO: Rename *-task command to remove task, which can be assumed
+// addCmd represents the add command
+var addCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Adds a new task",
+	Long:  `Adds a new task to your task list.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storage.DeleteTask(id)
+		task := storage.Task{}
+
+		scanner := bufio.NewScanner(os.Stdin)
+
+		fmt.Println("Enter Title:")
+		scanner.Scan()
+		task.Title = scanner.Text()
+
+		fmt.Println("Enter Description:")
+		scanner.Scan()
+		task.Description = scanner.Text()
+
+		task_id := storage.AddTask(task)
+		fmt.Printf("Added task with ID %d\n", task_id)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteTaskCmd)
-
-	deleteTaskCmd.PersistentFlags().IntVarP(&id, "id", "i", -1, "Id of task to delete")
-	deleteTaskCmd.MarkFlagRequired("id")
+	rootCmd.AddCommand(addCmd)
 }
