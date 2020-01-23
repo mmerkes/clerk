@@ -103,21 +103,9 @@ func DeleteTask(id int) {
 
 func StartTask(id int) {
 	tasks := loadTasks()
+	task, index, err := getTask(id, &tasks)
 
-	var task *Task
-
-	var index int
-	for i, t := range tasks.Tasks {
-		if t.Id == id {
-			index = i
-			task = &t
-			break
-		}
-	}
-
-	if task == nil {
-		panic("Task " + string(id) + " does not exist.")
-	}
+	handleError(err)
 
 	// Refactor: add flag so these if's can be cleaner
 	if isTimeSet(task.EndTime) {
@@ -136,7 +124,7 @@ func StartTask(id int) {
 		StartTime: startTime,
 	}
 	task.Events = append(task.Events, event)
-	tasks.Tasks[index] = *task
+	tasks.Tasks[index] = task
 
 	saveTasks(tasks)
 
@@ -158,21 +146,9 @@ func StartTask(id int) {
 
 func EditTask(id int) {
 	tasks := loadTasks()
+	task, index, err := getTask(id, &tasks)
 
-	var task *Task
-
-	var index int
-	for i, t := range tasks.Tasks {
-		if t.Id == id {
-			index = i
-			task = &t
-			break
-		}
-	}
-
-	if task == nil {
-		panic("Task " + string(id) + " does not exist.")
-	}
+	handleError(err)
 
 	if isTimeSet(task.EndTime) {
 		fmt.Println("Task is already Completed")
@@ -219,29 +195,16 @@ func EditTask(id int) {
 	task.Title = string(context[:newline])
 	task.Description = string(context[newline+1:])
 
-	tasks.Tasks[index] = *task
+	tasks.Tasks[index] = task
 
 	saveTasks(tasks)
 }
 
 func StopTask(id int) {
-	// TODO: Refactor shared code into function, i.e. finding a task, etc.
 	tasks := loadTasks()
+	task, index, err := getTask(id, &tasks)
 
-	var task *Task
-
-	var index int
-	for i, t := range tasks.Tasks {
-		if t.Id == id {
-			index = i
-			task = &t
-			break
-		}
-	}
-
-	if task == nil {
-		panic("Task " + string(id) + " does not exist.")
-	}
+	handleError(err)
 
 	if isTimeSet(task.EndTime) {
 		fmt.Println("Task is already Completed")
@@ -254,14 +217,16 @@ func StopTask(id int) {
 			task.Events[i] = e
 		}
 	}
-	tasks.Tasks[index] = *task
+	tasks.Tasks[index] = task
 
 	saveTasks(tasks)
 }
 
 func CompleteTask(id int) {
 	tasks := loadTasks()
-	task, index := getTask(id, &tasks)
+	task, index, err := getTask(id, &tasks)
+
+	handleError(err)
 
 	if isTimeSet(task.EndTime) {
 		fmt.Println("Task is already Completed")
@@ -296,16 +261,14 @@ func ListTasks(verbose bool) {
 	}
 }
 
-func getTask(id int, tasks *Tasks) (task Task, index int) {
+func getTask(id int, tasks *Tasks) (task Task, index int, err error) {
 	for index, task = range tasks.Tasks {
 		if task.Id == id {
-			return task, index
+			return task, index, nil
 		}
 	}
 
-	handleError(fmt.Errorf("Task %d does not exist.", id))
-
-	return
+	return Task{}, -1, fmt.Errorf("Task %d does not exist.", id)
 }
 
 func loadTasks() Tasks {
