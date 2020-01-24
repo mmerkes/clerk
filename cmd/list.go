@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mmerkes/clerk/pkg/storage"
+	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ var listCmd = &cobra.Command{
 	Short: "List tasks in the console",
 	Long:  `Prints a list of tasks in the console.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storage.ListTasks(Verbose)
+		clerk.ListTasks(Verbose)
 	},
 }
 

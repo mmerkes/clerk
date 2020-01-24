@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mmerkes/clerk/pkg/storage"
+	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ var editCmd = &cobra.Command{
 	Short: "Edit a task",
 	Long:  `Edit an existing task.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storage.EditTask(id)
+		clerk.EditTask(id)
 	},
 }
 

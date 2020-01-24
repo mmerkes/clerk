@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mmerkes/clerk/pkg/storage"
+	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ var startCmd = &cobra.Command{
 	Short: "Start working on a task",
 	Long:  `Starting working on a task.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storage.StartTask(id)
+		clerk.StartTask(id)
 	},
 }
 

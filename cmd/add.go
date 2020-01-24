@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mmerkes/clerk/pkg/storage"
+	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 
 	"bufio"
@@ -31,7 +31,7 @@ var addCmd = &cobra.Command{
 	Short: "Adds a new task",
 	Long:  `Adds a new task to your task list.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		task := storage.Task{}
+		task := clerk.Task{}
 
 		scanner := bufio.NewScanner(os.Stdin)
 
@@ -43,7 +43,7 @@ var addCmd = &cobra.Command{
 		scanner.Scan()
 		task.Description = scanner.Text()
 
-		task_id := storage.AddTask(task)
+		task_id := clerk.AddTask(task)
 		fmt.Printf("Added task with ID %d\n", task_id)
 	},
 }
