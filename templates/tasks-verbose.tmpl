@@ -1,0 +1,14 @@
+{{range .Tasks}}------------------------------------------------
+[{{.Id}}] {{.Title}}
+
+{{.Description}}
+
+Time Created: {{.CreateTime | fmtTime}}
+Time Started: {{.StartTime | fmtTime}}
+Time Ended: {{.EndTime | fmtTime}}
+Time Spent: {{.Events | timeSpent}}
+
+Elapsed  Start                End
+{{range .Events}}{{. | timeElapsed}} {{.StartTime | fmtTime}} {{.EndTime | fmtTime}}
+{{end}}
+{{end}}

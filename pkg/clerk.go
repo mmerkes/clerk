@@ -1,4 +1,4 @@
-package storage
+package clerk
 
 import (
 	"encoding/json"
@@ -15,58 +15,6 @@ import (
 	"time"
 )
 
-var shortTasksTemplate string = `
-Id  TimeSpent Title
-{{range .Tasks}}{{.Id | printf "%-3d"}} {{.Events | timeSpent}}  {{.Title}}
-{{end}}
-`
-
-var verboseTasksTemplate string = `{{range .Tasks}}------------------------------------------------
-[{{.Id}}] {{.Title}}
-
-{{.Description}}
-
-Time Created: {{.CreateTime | fmtTime}}
-Time Started: {{.StartTime | fmtTime}}
-Time Ended: {{.EndTime | fmtTime}}
-Time Spent: {{.Events | timeSpent}}
-
-Elapsed  Start                End
-{{range .Events}}{{. | timeElapsed}} {{.StartTime | fmtTime}} {{.EndTime | fmtTime}}
-{{end}}
-{{end}}`
-
-type Event struct {
-	StartTime time.Time
-	EndTime   time.Time
-}
-
-type Task struct {
-	Id          int
-	Title       string
-	Description string
-	Events      []Event
-	CreateTime  time.Time
-	StartTime   time.Time
-	EndTime     time.Time
-}
-
-type Tasks struct {
-	Tasks []Task
-}
-
-func handleError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func setDefaultTaskValues(task *Task) {
-	task.Events = []Event{}
-	task.CreateTime = time.Now()
-}
-
-// TODO: Should refactor entire package and separate data layer from modeling layer
 func AddTask(task Task) int {
 	setDefaultTaskValues(&task)
 
@@ -243,17 +191,21 @@ func CompleteTask(id int) {
 func ListTasks(verbose bool) {
 	tasks := loadTasks()
 
-	tmpl := shortTasksTemplate
+	tmpl, err := shortTasksTemplate()
+	handleError(err)
+
 	if verbose {
-		tmpl = verboseTasksTemplate
+		tmpl, err = verboseTasksTemplate()
+		handleError(err)
 	}
+
 	s, err := template.New("tasks").
 		Funcs(template.FuncMap{
 			"fmtTime":     fmtTime,
 			"timeElapsed": timeElapsed,
 			"timeSpent":   timeSpent,
 		}).
-		Parse(tmpl)
+		Parse(string(tmpl))
 	handleError(err)
 
 	if err := s.Execute(os.Stdout, tasks); err != nil {
@@ -361,4 +313,15 @@ func getMinutes(duration time.Duration) float64 {
 
 func getSeconds(duration time.Duration) float64 {
 	return math.Mod(duration.Seconds(), 60)
+}
+
+func handleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func setDefaultTaskValues(task *Task) {
+	task.Events = []Event{}
+	task.CreateTime = time.Now()
 }

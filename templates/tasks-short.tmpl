@@ -1,0 +1,3 @@
+Id  TimeSpent Title
+{{range .Tasks}}{{.Id | printf "%-3d"}} {{.Events | timeSpent}}  {{.Title}}
+{{end}}

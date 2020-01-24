@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/mmerkes/clerk/pkg/storage"
+	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a task",
 	Long:  `Delete a task from your set of tasks.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		storage.DeleteTask(id)
+		clerk.DeleteTask(id)
 	},
 }
 
