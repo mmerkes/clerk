@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+var rootPersistenceDir string
+
+func SetRootPersistenceDir(dir string) {
+	rootPersistenceDir = dir
+}
+
 func AddTask(task Task) int {
 	setDefaultTaskValues(&task)
 
@@ -258,8 +264,12 @@ func remove(slice []Task, i int) []Task {
 }
 
 func getDBPath() string {
-	home, err := homedir.Dir()
-	handleError(err)
+	home := rootPersistenceDir
+	if home == "" {
+		dir, err := homedir.Dir()
+		handleError(err)
+		home = dir
+	}
 
 	return home + "/.clerk-db"
 }

@@ -26,6 +26,8 @@ var completeCmd = &cobra.Command{
 	Short: "Complete a task",
 	Long:  `Complete a task and set the EndTime.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.CompleteTask(id)
 	},
 }

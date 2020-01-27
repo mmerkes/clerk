@@ -31,6 +31,8 @@ var addCmd = &cobra.Command{
 	Short: "Adds a new task",
 	Long:  `Adds a new task to your task list.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		task := clerk.Task{}
 
 		scanner := bufio.NewScanner(os.Stdin)

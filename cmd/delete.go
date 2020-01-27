@@ -28,6 +28,8 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a task",
 	Long:  `Delete a task from your set of tasks.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.DeleteTask(id)
 	},
 }

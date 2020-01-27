@@ -26,6 +26,8 @@ var editCmd = &cobra.Command{
 	Short: "Edit a task",
 	Long:  `Edit an existing task.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.EditTask(id)
 	},
 }
