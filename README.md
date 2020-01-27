@@ -11,6 +11,8 @@ $ go run main.go add
 $ go run main.go start -i 1
 # Stop a task of ID 1
 $ go run main.go stop -i 1
+# Complete a task of ID 1
+$ go run main.go complete -i 1
 ```
 
 Run `go run main.go --help` for full usage.
