@@ -28,6 +28,8 @@ var listCmd = &cobra.Command{
 	Short: "List tasks in the console",
 	Long:  `Prints a list of tasks in the console.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.ListTasks(Verbose)
 	},
 }

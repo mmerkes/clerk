@@ -26,6 +26,8 @@ var startCmd = &cobra.Command{
 	Short: "Start working on a task",
 	Long:  `Starting working on a task.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.StartTask(id)
 	},
 }

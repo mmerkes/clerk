@@ -26,6 +26,8 @@ var stopCmd = &cobra.Command{
 	Short: "Stop a task",
 	Long:  `Stops working on a task and updates the end time.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Try to set the root persistence directory.
+		clerk.SetRootPersistenceDir(rootPersistenceDir)
 		clerk.StopTask(id)
 	},
 }
