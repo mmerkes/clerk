@@ -16,11 +16,15 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/mmerkes/clerk/pkg"
 	"github.com/spf13/cobra"
 )
 
 var Verbose bool
+var Statuses string
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -30,12 +34,29 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Try to set the root persistence directory.
 		clerk.SetRootPersistenceDir(rootPersistenceDir)
-		clerk.ListTasks(Verbose)
+
+		statuses := []string{}
+		if Statuses != "" {
+			statuses = strings.Split(Statuses, ",")
+		}
+
+		filterStatuses := make([]clerk.TaskStatus, len(statuses))
+		for i, status := range statuses {
+			filterStatuses[i] = clerk.TaskStatus(status)
+			if !clerk.IsValidTaskStatus(filterStatuses[i]) {
+				panic(fmt.Sprintf("%s is not a valid status", status))
+			}
+		}
+
+		clerk.ListTasks(Verbose, filterStatuses)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
 
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	listCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	listCmd.PersistentFlags().StringVar(&Statuses, "status", "",
+		"Task status filter to restrict statuses or see completed tasks. "+
+			"Can be Created, Started, Complete or a comma-separated combination")
 }
