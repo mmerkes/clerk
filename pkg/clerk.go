@@ -194,8 +194,39 @@ func CompleteTask(id int) {
 	saveTasks(tasks)
 }
 
-func ListTasks(verbose bool) {
+func filterTasksByStatus(tasks *[]Task, statuses []TaskStatus) []Task {
+	statusMap := make(map[TaskStatus]bool)
+	for _, status := range statuses {
+		statusMap[status] = true
+	}
+
+	filteredTasks := make([]Task, 0)
+	for _, task := range *tasks {
+		var status TaskStatus
+		if isTimeSet(task.EndTime) {
+			status = Complete
+		} else if isTimeSet(task.StartTime) {
+			status = Started
+		} else {
+			status = Created
+		}
+		if _, exists := statusMap[status]; exists {
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
+
+	return filteredTasks
+}
+
+func ListTasks(verbose bool, filterStatuses []TaskStatus) {
 	tasks := loadTasks()
+
+	// If not statuses are set, default to incomplete statuses
+	if len(filterStatuses) == 0 {
+		filterStatuses = []TaskStatus{Created, Started}
+	}
+
+	tasks.Tasks = filterTasksByStatus(&tasks.Tasks, filterStatuses)
 
 	tmpl, err := shortTasksTemplate()
 	handleError(err)
